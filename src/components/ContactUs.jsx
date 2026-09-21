@@ -76,14 +76,6 @@ export default function ContactUs() {
                   Mumbai - 400104,<br />
                   Maharashtra, India
                 </p>
-                <a
-                  href="https://maps.google.com/?q=Shastri+Nagar+Goregaon+West+Mumbai+400104"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="contact-map-link"
-                >
-                  View on Google Maps →
-                </a>
               </div>
             </div>
 
@@ -99,12 +91,6 @@ export default function ContactUs() {
                   General &amp; Technical Support:<br />
                   <a href="mailto:support@chulbulplay.in" className="contact-direct-link">
                     support@chulbulplay.in
-                  </a>
-                </p>
-                <p>
-                  Business &amp; Partnerships:<br />
-                  <a href="mailto:hello@chulbulplay.com" className="contact-direct-link">
-                    hello@chulbulplay.com
                   </a>
                 </p>
               </div>
