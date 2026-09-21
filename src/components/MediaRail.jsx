@@ -10,6 +10,26 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
   const hasMovedRef = useRef(false);
+  const pauseTimeoutRef = useRef(null);
+
+  // Temporarily pause auto-slide when user interacts (click buttons, drag, wheel)
+  const pauseAutoSlideTemporarily = (duration = 5000) => {
+    setIsPaused(true);
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+    pauseTimeoutRef.current = setTimeout(() => {
+      setIsPaused(false);
+    }, duration);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const items = section.items || [];
   // Create seamless duplicate sets so there are plenty of cards to scroll in both directions
@@ -31,8 +51,8 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
     }
   }, [items.length, repeatCount]);
 
-  // Infinite Auto-Slide every 2.6s - 3.4s when not hovered or dragged
-  const intervalTime = 2600 + (sliderIndex % 3) * 400;
+  // Infinite Auto-Slide every 2.6s - 3.4s when not paused/hovered/dragged
+  const intervalTime = 2800 + (sliderIndex % 3) * 400;
 
   useEffect(() => {
     if (displayItems.length === 0 || isPaused || isDragging) return;
@@ -70,12 +90,12 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   // Mouse Drag to Scroll handlers
   const handleMouseDown = (e) => {
     if (!railRef.current) return;
+    pauseAutoSlideTemporarily(5000);
     isMouseDownRef.current = true;
     hasMovedRef.current = false;
     startXRef.current = e.pageX - railRef.current.offsetLeft;
     scrollLeftRef.current = railRef.current.scrollLeft;
     setIsDragging(true);
-    setIsPaused(true);
   };
 
   const handleMouseMove = (e) => {
@@ -92,20 +112,22 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   const handleMouseUpOrLeave = () => {
     isMouseDownRef.current = false;
     setIsDragging(false);
-    setIsPaused(false);
   };
 
   // Mouse Wheel horizontal scroll
   const handleWheel = (e) => {
     if (!railRef.current) return;
+    pauseAutoSlideTemporarily(4000);
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       railRef.current.scrollLeft += e.deltaY * 1.1;
     }
   };
 
-  // Slider navigation buttons in top right
+  // Slider navigation buttons in top right (smooth and pauses auto-slide)
   const move = (direction) => {
     if (!railRef.current || repeatCount === 0) return;
+    pauseAutoSlideTemporarily(5000);
+
     const rail = railRef.current;
     const step = direction * (rail.clientWidth > 600 ? 420 : 260);
     const singleSetWidth = rail.scrollWidth / repeatCount;
