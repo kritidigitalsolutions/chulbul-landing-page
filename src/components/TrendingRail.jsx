@@ -3,33 +3,54 @@ import { ChevronLeft, ChevronRight, Flame, Play, Star } from 'lucide-react';
 
 export default function TrendingRail({ items = [] }) {
   const railRef = useRef(null);
-  const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const isMouseDownRef = useRef(false);
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
   const hasMovedRef = useRef(false);
-  const pauseTimeoutRef = useRef(null);
 
-  // Temporarily pause auto-slide when user interacts (click buttons, drag, wheel)
-  const pauseAutoSlideTemporarily = (duration = 5000) => {
-    setIsPaused(true);
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current);
+  const autoSlideIntervalRef = useRef(null);
+  const resumeTimeoutRef = useRef(null);
+
+  // Synchronous stop auto-slide (guaranteed no race condition with button clicks)
+  const stopAutoSlide = () => {
+    if (autoSlideIntervalRef.current) {
+      clearInterval(autoSlideIntervalRef.current);
+      autoSlideIntervalRef.current = null;
     }
-    pauseTimeoutRef.current = setTimeout(() => {
-      setIsPaused(false);
-    }, duration);
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+      resumeTimeoutRef.current = null;
+    }
   };
 
-  useEffect(() => {
-    return () => {
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current);
+  // Start auto-slide
+  const startAutoSlide = () => {
+    stopAutoSlide();
+    if (items.length === 0) return;
+
+    autoSlideIntervalRef.current = setInterval(() => {
+      if (!railRef.current || isMouseDownRef.current) return;
+      const rail = railRef.current;
+      const singleSetWidth = rail.scrollWidth / repeatCount;
+      const step = 260; // 1 card width + gap
+
+      if (rail.scrollLeft >= singleSetWidth * (repeatCount - 1.5)) {
+        rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
       }
-    };
-  }, []);
+
+      rail.scrollBy({ left: step, behavior: 'smooth' });
+    }, 4000);
+  };
+
+  // Pause immediately and schedule resume after delay
+  const pauseThenResumeAutoSlide = (delay = 7000) => {
+    stopAutoSlide();
+    resumeTimeoutRef.current = setTimeout(() => {
+      startAutoSlide();
+    }, delay);
+  };
 
   // Create seamless duplicate sets so there are plenty of cards to scroll in both directions
   const repeatCount = items.length > 0 ? Math.max(4, Math.ceil(12 / items.length)) : 0;
@@ -50,25 +71,13 @@ export default function TrendingRail({ items = [] }) {
     }
   }, [items.length, repeatCount]);
 
-  // Infinite Auto-Slide every 3.2 seconds when not paused/dragging/hovering
+  // Start timer on mount, clean up on unmount
   useEffect(() => {
-    if (displayItems.length === 0 || isPaused || isDragging) return;
-
-    const interval = setInterval(() => {
-      if (!railRef.current || isMouseDownRef.current) return;
-      const rail = railRef.current;
-      const singleSetWidth = rail.scrollWidth / repeatCount;
-      const step = 260; // card width + gap
-
-      if (rail.scrollLeft >= singleSetWidth * (repeatCount - 1.5)) {
-        rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
-      }
-
-      rail.scrollBy({ left: step, behavior: 'smooth' });
-    }, 3200);
-
-    return () => clearInterval(interval);
-  }, [items.length, repeatCount, isPaused, isDragging]);
+    startAutoSlide();
+    return () => {
+      stopAutoSlide();
+    };
+  }, [items.length, repeatCount]);
 
   // Infinite Scroll boundary check on manual scroll / wheel
   const handleScroll = () => {
@@ -87,7 +96,7 @@ export default function TrendingRail({ items = [] }) {
   // Mouse Drag to Scroll handlers
   const handleMouseDown = (e) => {
     if (!railRef.current) return;
-    pauseAutoSlideTemporarily(5000);
+    stopAutoSlide();
     isMouseDownRef.current = true;
     hasMovedRef.current = false;
     startXRef.current = e.pageX - railRef.current.offsetLeft;
@@ -107,24 +116,29 @@ export default function TrendingRail({ items = [] }) {
   };
 
   const handleMouseUpOrLeave = () => {
-    isMouseDownRef.current = false;
-    setIsDragging(false);
+    if (isMouseDownRef.current) {
+      isMouseDownRef.current = false;
+      setIsDragging(false);
+      pauseThenResumeAutoSlide(4000);
+    }
   };
 
   // Mouse Wheel horizontal scroll
   const handleWheel = (e) => {
     if (!railRef.current) return;
-    pauseAutoSlideTemporarily(4000);
+    pauseThenResumeAutoSlide(5000);
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       railRef.current.scrollLeft += e.deltaY * 1.1;
     }
   };
 
-  // Arrow button click navigation in top right (smooth and pauses auto-slide)
+  // Arrow button click navigation in top right (synchronously stops auto-slide and glides)
   const scroll = (direction) => {
     if (!railRef.current || repeatCount === 0) return;
-    pauseAutoSlideTemporarily(5000);
+    // 1. Instantly kill auto-slide
+    pauseThenResumeAutoSlide(7000);
 
+    // 2. Perform smooth scroll
     const rail = railRef.current;
     const step = direction * (rail.clientWidth > 600 ? 420 : 260);
     const singleSetWidth = rail.scrollWidth / repeatCount;
@@ -178,8 +192,8 @@ export default function TrendingRail({ items = [] }) {
         {/* 1350px Slider Track */}
         <div
           className={`rail-wrap netflix-rail-wrap ${isDragging ? 'is-dragging' : ''}`}
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={handleMouseUpOrLeave}
+          onMouseEnter={stopAutoSlide}
+          onMouseLeave={() => pauseThenResumeAutoSlide(3000)}
         >
           <div
             className="media-rail netflix-rail"

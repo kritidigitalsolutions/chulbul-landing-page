@@ -3,33 +3,15 @@ import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
 
 export default function MediaRail({ section, sliderIndex = 0 }) {
   const railRef = useRef(null);
-  const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const isMouseDownRef = useRef(false);
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
   const hasMovedRef = useRef(false);
-  const pauseTimeoutRef = useRef(null);
 
-  // Temporarily pause auto-slide when user interacts (click buttons, drag, wheel)
-  const pauseAutoSlideTemporarily = (duration = 5000) => {
-    setIsPaused(true);
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current);
-    }
-    pauseTimeoutRef.current = setTimeout(() => {
-      setIsPaused(false);
-    }, duration);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current);
-      }
-    };
-  }, []);
+  const autoSlideIntervalRef = useRef(null);
+  const resumeTimeoutRef = useRef(null);
 
   const items = section.items || [];
   // Create seamless duplicate sets so there are plenty of cards to scroll in both directions
@@ -41,23 +23,25 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
     }
   }
 
-  // Initial center position so scrolling left immediately works infinitely
-  useEffect(() => {
-    if (railRef.current && displayItems.length > 0) {
-      const rail = railRef.current;
-      const singleSetWidth = rail.scrollWidth / repeatCount;
-      const initialOffset = singleSetWidth * Math.floor(repeatCount / 2);
-      rail.scrollLeft = initialOffset;
+  // Synchronous stop auto-slide (guaranteed no race condition with button clicks)
+  const stopAutoSlide = () => {
+    if (autoSlideIntervalRef.current) {
+      clearInterval(autoSlideIntervalRef.current);
+      autoSlideIntervalRef.current = null;
     }
-  }, [items.length, repeatCount]);
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+      resumeTimeoutRef.current = null;
+    }
+  };
 
-  // Infinite Auto-Slide every 2.6s - 3.4s when not paused/hovered/dragged
-  const intervalTime = 2800 + (sliderIndex % 3) * 400;
+  // Start auto-slide with staggered interval per row
+  const startAutoSlide = () => {
+    stopAutoSlide();
+    if (items.length === 0) return;
 
-  useEffect(() => {
-    if (displayItems.length === 0 || isPaused || isDragging) return;
-
-    const interval = setInterval(() => {
+    const intervalTime = 3800 + (sliderIndex % 3) * 500;
+    autoSlideIntervalRef.current = setInterval(() => {
       if (!railRef.current || isMouseDownRef.current) return;
       const rail = railRef.current;
       const singleSetWidth = rail.scrollWidth / repeatCount;
@@ -69,9 +53,33 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
 
       rail.scrollBy({ left: step, behavior: 'smooth' });
     }, intervalTime);
+  };
 
-    return () => clearInterval(interval);
-  }, [items.length, repeatCount, isPaused, isDragging, intervalTime]);
+  // Pause immediately and schedule resume after delay
+  const pauseThenResumeAutoSlide = (delay = 7000) => {
+    stopAutoSlide();
+    resumeTimeoutRef.current = setTimeout(() => {
+      startAutoSlide();
+    }, delay);
+  };
+
+  // Initial center position so scrolling left immediately works infinitely
+  useEffect(() => {
+    if (railRef.current && displayItems.length > 0) {
+      const rail = railRef.current;
+      const singleSetWidth = rail.scrollWidth / repeatCount;
+      const initialOffset = singleSetWidth * Math.floor(repeatCount / 2);
+      rail.scrollLeft = initialOffset;
+    }
+  }, [items.length, repeatCount]);
+
+  // Start timer on mount, clean up on unmount
+  useEffect(() => {
+    startAutoSlide();
+    return () => {
+      stopAutoSlide();
+    };
+  }, [items.length, repeatCount]);
 
   // Infinite Scroll boundary check on manual scroll / wheel
   const handleScroll = () => {
@@ -90,7 +98,7 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   // Mouse Drag to Scroll handlers
   const handleMouseDown = (e) => {
     if (!railRef.current) return;
-    pauseAutoSlideTemporarily(5000);
+    stopAutoSlide();
     isMouseDownRef.current = true;
     hasMovedRef.current = false;
     startXRef.current = e.pageX - railRef.current.offsetLeft;
@@ -110,24 +118,29 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   };
 
   const handleMouseUpOrLeave = () => {
-    isMouseDownRef.current = false;
-    setIsDragging(false);
+    if (isMouseDownRef.current) {
+      isMouseDownRef.current = false;
+      setIsDragging(false);
+      pauseThenResumeAutoSlide(4000);
+    }
   };
 
   // Mouse Wheel horizontal scroll
   const handleWheel = (e) => {
     if (!railRef.current) return;
-    pauseAutoSlideTemporarily(4000);
+    pauseThenResumeAutoSlide(5000);
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       railRef.current.scrollLeft += e.deltaY * 1.1;
     }
   };
 
-  // Slider navigation buttons in top right (smooth and pauses auto-slide)
+  // Slider navigation buttons in top right (synchronously stops auto-slide and glides)
   const move = (direction) => {
     if (!railRef.current || repeatCount === 0) return;
-    pauseAutoSlideTemporarily(5000);
+    // 1. Instantly kill auto-slide
+    pauseThenResumeAutoSlide(7000);
 
+    // 2. Perform smooth scroll
     const rail = railRef.current;
     const step = direction * (rail.clientWidth > 600 ? 420 : 260);
     const singleSetWidth = rail.scrollWidth / repeatCount;
@@ -184,8 +197,8 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
         {/* 1350px Max Width Slider Track */}
         <div
           className={`rail-wrap ${isDragging ? 'is-dragging' : ''}`}
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={handleMouseUpOrLeave}
+          onMouseEnter={stopAutoSlide}
+          onMouseLeave={() => pauseThenResumeAutoSlide(3000)}
         >
           <div
             className="media-rail"
