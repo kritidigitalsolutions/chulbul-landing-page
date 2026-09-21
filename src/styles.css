@@ -765,7 +765,7 @@ img {
   position: relative;
 }
 
-/* High-contrast, clean modern rank numbers with black shadow */
+/* Clean, crisp flat outlined rank numbers without shadow */
 .netflix-rank-simple {
   font-family: 'Space Grotesk', 'Outfit', sans-serif;
   font-size: clamp(4.8rem, 6.8vw, 6.8rem);
@@ -775,8 +775,6 @@ img {
   color: #10072e;
   -webkit-text-stroke: 1.8px #793bf7;
   paint-order: stroke fill;
-  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
-  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.35));
   margin-right: -6px;
   min-width: 40px;
   height: 254px;
@@ -787,7 +785,7 @@ img {
   z-index: 1;
   pointer-events: none;
   user-select: none;
-  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1), -webkit-text-stroke 0.18s ease, filter 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1), -webkit-text-stroke 0.18s ease;
 }
 
 /* Number 1 spacing: clean, completely visible next to poster */
@@ -809,7 +807,6 @@ img {
 .fast-hover-card:hover .netflix-rank-simple {
   transform: translateY(-4px) scale(1.04);
   -webkit-text-stroke: 1.8px #ffd21a;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.55));
 }
 
 .poster-wrap {
@@ -1818,8 +1815,6 @@ img {
     margin-right: -4px;
     -webkit-text-stroke: 1.5px #793bf7;
     padding-bottom: 2px;
-    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
-    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
   }
   .netflix-rank-simple.rank-1 {
     margin-right: 4px;
