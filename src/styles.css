@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,600&family=Space+Grotesk:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,600&family=Outfit:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root {
   --ink: #120a35;
@@ -765,35 +765,35 @@ img {
   position: relative;
 }
 
-/* High-contrast, premium OTT 3D rank numbers for Top 10 slider */
+/* High-contrast, clean modern rank numbers with black shadow */
 .netflix-rank-simple {
-  font-family: 'Anton', 'Bebas Neue', 'Impact', sans-serif;
-  font-size: clamp(6.2rem, 8.5vw, 8.8rem);
-  font-weight: 400;
-  line-height: 0.72;
-  letter-spacing: 0.02em;
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+  font-size: clamp(4.8rem, 6.8vw, 6.8rem);
+  font-weight: 700;
+  line-height: 0.8;
+  letter-spacing: -0.02em;
   color: #10072e;
-  -webkit-text-stroke: 3.5px #793bf7;
+  -webkit-text-stroke: 1.8px #793bf7;
   paint-order: stroke fill;
-  text-shadow: 0 6px 20px rgba(121, 59, 247, 0.4);
-  filter: drop-shadow(0 6px 14px rgba(18, 10, 53, 0.3));
-  margin-right: -8px;
-  min-width: 52px;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.35));
+  margin-right: -6px;
+  min-width: 40px;
   height: 254px;
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  padding-bottom: 2px;
+  padding-bottom: 4px;
   z-index: 1;
   pointer-events: none;
   user-select: none;
   transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1), -webkit-text-stroke 0.18s ease, filter 0.18s ease;
 }
 
-/* Number 1 has narrow glyph width - positive margin keeps it 100% visible, centered, and bold */
+/* Number 1 spacing: clean, completely visible next to poster */
 .netflix-rank-simple.rank-1 {
-  margin-right: 8px;
-  min-width: 44px;
+  margin-right: 4px;
+  min-width: 28px;
   padding-right: 0;
   justify-content: center;
 }
@@ -801,16 +801,15 @@ img {
 /* Double-digit rank 10 */
 .netflix-rank-simple.rank-10 {
   letter-spacing: -0.05em;
-  margin-right: -16px;
-  min-width: 82px;
-  font-size: clamp(5.4rem, 7.2vw, 7.4rem);
+  margin-right: -12px;
+  min-width: 68px;
+  font-size: clamp(4.2rem, 5.8vw, 5.8rem);
 }
 
 .fast-hover-card:hover .netflix-rank-simple {
-  transform: translateY(-4px) scale(1.05);
-  -webkit-text-stroke: 3.5px #ffd21a;
-  filter: drop-shadow(0 8px 24px rgba(255, 210, 26, 0.55));
-  text-shadow: 0 0 28px rgba(255, 210, 26, 0.6);
+  transform: translateY(-4px) scale(1.04);
+  -webkit-text-stroke: 1.8px #ffd21a;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.55));
 }
 
 .poster-wrap {
@@ -1813,21 +1812,23 @@ img {
     height: 190px;
   }
   .netflix-rank-simple {
-    font-size: clamp(4.2rem, 7vw, 5.2rem);
+    font-size: clamp(3.4rem, 5.8vw, 4.2rem);
     height: 190px;
-    min-width: 36px;
-    margin-right: -6px;
-    -webkit-text-stroke: 2.5px #793bf7;
+    min-width: 26px;
+    margin-right: -4px;
+    -webkit-text-stroke: 1.5px #793bf7;
     padding-bottom: 2px;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
   }
   .netflix-rank-simple.rank-1 {
-    margin-right: 6px;
-    min-width: 28px;
+    margin-right: 4px;
+    min-width: 20px;
   }
   .netflix-rank-simple.rank-10 {
-    font-size: clamp(3.8rem, 6.2vw, 4.6rem);
-    margin-right: -12px;
-    min-width: 58px;
+    font-size: clamp(3rem, 5vw, 3.6rem);
+    margin-right: -8px;
+    min-width: 48px;
   }
   .netflix-poster-box .poster-wrap,
   .media-card .poster-wrap {
