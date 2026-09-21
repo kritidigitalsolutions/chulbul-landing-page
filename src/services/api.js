@@ -157,8 +157,8 @@ export const api = {
 
     // 3. Process Trending (Top 10)
     let trendingList = allPosters.filter((p) => p.category?.toLowerCase() === 'trending');
-    if (trendingList.length === 0) {
-      trendingList = allPosters;
+    if (trendingList.length === 0 && allPosters.length > 0) {
+      trendingList = allPosters.slice(0, 10);
     }
     const trending = trendingList.slice(0, 10).map((item, idx) => ({
       ...item,
