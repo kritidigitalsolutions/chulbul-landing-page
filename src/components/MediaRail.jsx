@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
 
 export default function MediaRail({ section, sliderIndex = 0 }) {
@@ -11,38 +11,6 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   const hasMovedRef = useRef(false);
 
   const items = section.items || [];
-  // Create seamless duplicate sets so there are plenty of cards to scroll in both directions
-  const repeatCount = items.length > 0 ? Math.max(4, Math.ceil(12 / items.length)) : 0;
-  const displayItems = [];
-  if (items.length > 0) {
-    for (let r = 0; r < repeatCount; r++) {
-      displayItems.push(...items);
-    }
-  }
-
-  // Initial center position so scrolling left immediately works infinitely
-  useEffect(() => {
-    if (railRef.current && displayItems.length > 0) {
-      const rail = railRef.current;
-      const singleSetWidth = rail.scrollWidth / repeatCount;
-      const initialOffset = singleSetWidth * Math.floor(repeatCount / 2);
-      rail.scrollLeft = initialOffset;
-    }
-  }, [items.length, repeatCount]);
-
-  // Infinite Scroll boundary check on manual scroll / wheel
-  const handleScroll = () => {
-    if (!railRef.current || repeatCount === 0) return;
-    const rail = railRef.current;
-    const singleSetWidth = rail.scrollWidth / repeatCount;
-    if (singleSetWidth <= 0) return;
-
-    if (rail.scrollLeft >= singleSetWidth * (repeatCount - 1.2)) {
-      rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
-    } else if (rail.scrollLeft <= singleSetWidth * 0.4) {
-      rail.scrollLeft += singleSetWidth * Math.floor(repeatCount / 2);
-    }
-  };
 
   // Mouse Drag to Scroll handlers
   const handleMouseDown = (e) => {
@@ -80,20 +48,11 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
     }
   };
 
-  // Slider navigation buttons in top right (smooth and instant)
+  // Slider navigation buttons in top right (smooth manual navigation only)
   const move = (direction) => {
-    if (!railRef.current || repeatCount === 0) return;
-
+    if (!railRef.current) return;
     const rail = railRef.current;
     const step = direction * (rail.clientWidth > 600 ? 420 : 260);
-    const singleSetWidth = rail.scrollWidth / repeatCount;
-
-    if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.8) {
-      rail.scrollLeft += singleSetWidth * Math.floor(repeatCount / 2);
-    } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * (repeatCount - 1.5)) {
-      rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
-    }
-
     rail.scrollBy({ left: step, behavior: 'smooth' });
   };
 
@@ -147,10 +106,10 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
             onWheel={handleWheel}
-            onScroll={handleScroll}
           >
-            {displayItems.map((item, index) => (
+            {items.map((item, index) => (
               <article
                 className="media-card fast-hover-card"
                 key={`${item.title}-${index}`}

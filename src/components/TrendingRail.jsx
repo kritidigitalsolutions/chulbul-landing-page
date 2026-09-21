@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Flame, Play, Star } from 'lucide-react';
 
 export default function TrendingRail({ items = [] }) {
@@ -9,39 +9,6 @@ export default function TrendingRail({ items = [] }) {
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
   const hasMovedRef = useRef(false);
-
-  // Create seamless duplicate sets so there are plenty of cards to scroll in both directions
-  const repeatCount = items.length > 0 ? Math.max(4, Math.ceil(12 / items.length)) : 0;
-  const displayItems = [];
-  if (items.length > 0) {
-    for (let r = 0; r < repeatCount; r++) {
-      displayItems.push(...items);
-    }
-  }
-
-  // Initial center position so scrolling left immediately works infinitely
-  useEffect(() => {
-    if (railRef.current && displayItems.length > 0) {
-      const rail = railRef.current;
-      const singleSetWidth = rail.scrollWidth / repeatCount;
-      const initialOffset = singleSetWidth * Math.floor(repeatCount / 2);
-      rail.scrollLeft = initialOffset;
-    }
-  }, [items.length, repeatCount]);
-
-  // Infinite Scroll boundary check on manual scroll / wheel
-  const handleScroll = () => {
-    if (!railRef.current || repeatCount === 0) return;
-    const rail = railRef.current;
-    const singleSetWidth = rail.scrollWidth / repeatCount;
-    if (singleSetWidth <= 0) return;
-
-    if (rail.scrollLeft >= singleSetWidth * (repeatCount - 1.2)) {
-      rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
-    } else if (rail.scrollLeft <= singleSetWidth * 0.4) {
-      rail.scrollLeft += singleSetWidth * Math.floor(repeatCount / 2);
-    }
-  };
 
   // Mouse Drag to Scroll handlers
   const handleMouseDown = (e) => {
@@ -81,18 +48,9 @@ export default function TrendingRail({ items = [] }) {
 
   // Arrow button click navigation in top right (smooth and instant)
   const scroll = (direction) => {
-    if (!railRef.current || repeatCount === 0) return;
-
+    if (!railRef.current) return;
     const rail = railRef.current;
     const step = direction * (rail.clientWidth > 600 ? 420 : 260);
-    const singleSetWidth = rail.scrollWidth / repeatCount;
-
-    if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.8) {
-      rail.scrollLeft += singleSetWidth * Math.floor(repeatCount / 2);
-    } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * (repeatCount - 1.5)) {
-      rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
-    }
-
     rail.scrollBy({ left: step, behavior: 'smooth' });
   };
 
@@ -143,11 +101,11 @@ export default function TrendingRail({ items = [] }) {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
             onWheel={handleWheel}
-            onScroll={handleScroll}
           >
-            {displayItems.map((item, index) => {
-              const rankNum = item.rank || (index % items.length) + 1;
+            {items.map((item, index) => {
+              const rankNum = item.rank || index + 1;
 
               return (
                 <article className="netflix-card fast-hover-card" key={`${item.id || item.title}-${index}`}>

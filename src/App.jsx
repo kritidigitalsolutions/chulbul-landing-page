@@ -82,13 +82,10 @@ function Home() {
       }
     }
 
-    // 1. Instant initial fetch
+    // 1. Initial fetch on mount
     loadData();
 
-    // 2. Real-time background sync polling (10s)
-    const syncInterval = setInterval(loadData, 10000);
-
-    // 3. Instant auto-refresh when tab/window gains focus
+    // 2. Refresh when tab/window gains focus
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         loadData();
@@ -100,7 +97,6 @@ function Home() {
 
     return () => {
       isMounted = false;
-      clearInterval(syncInterval);
       window.removeEventListener('focus', handleVisibilityOrFocus);
       document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };

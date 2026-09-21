@@ -3,16 +3,6 @@ import { ChevronLeft, ChevronRight, Star, Sparkles } from 'lucide-react';
 
 export default function HeroBanner({ banners = [] }) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  // Auto transition every 6 seconds if not paused by mouse hover
-  useEffect(() => {
-    if (!banners || banners.length === 0 || isPaused) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % banners.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [banners, isPaused]);
 
   if (!banners || banners.length === 0) {
     return (
@@ -63,8 +53,6 @@ export default function HeroBanner({ banners = [] }) {
     <section
       className="hero"
       id="hero"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
     >
       {/* Background Banners */}
       <div className="hero-backdrops">
