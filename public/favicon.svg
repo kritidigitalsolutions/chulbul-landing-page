@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="cpGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f018a8" />
+      <stop offset="45%" stop-color="#793bf7" />
+      <stop offset="100%" stop-color="#ffd21a" />
+    </linearGradient>
+    <filter id="cpGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#f018a8" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#120a35" />
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="url(#cpGrad)" stroke-width="2.5" />
+  <path d="M24 17 L48 32 L24 47 Z" fill="url(#cpGrad)" filter="url(#cpGlow)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" />
+  <circle cx="48" cy="18" r="4.5" fill="#ffd21a" />
+</svg>
