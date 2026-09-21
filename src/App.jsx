@@ -28,6 +28,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsAndConditions from './components/TermsAndConditions';
 import RefundPolicy from './components/RefundPolicy';
 import DeleteAccount from './components/DeleteAccount';
+import AboutUs from './components/AboutUs';
 import { api } from './services/api';
 import {
   heroBanners as defaultBanners,
@@ -449,7 +450,8 @@ export default function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/about" element={<InfoPage type="/about" />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/about-us" element={<AboutUs />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
