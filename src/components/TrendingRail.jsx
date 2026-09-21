@@ -11,21 +11,36 @@ export default function TrendingRail({ items = [] }) {
   const scrollLeftRef = useRef(0);
   const hasMovedRef = useRef(false);
 
+  // Ensure we have 10 items for Top 10
+  let normalizedItems = items;
+  if (items.length > 0 && items.length < 10) {
+    normalizedItems = [];
+    for (let i = 0; i < 10; i++) {
+      normalizedItems.push({
+        ...items[i % items.length],
+        id: `${items[i % items.length].id || 'top'}-rank-${i + 1}`,
+        rank: i + 1
+      });
+    }
+  }
+
   // 4 sets for true seamless infinite loop buffer
-  const displayItems = items.length > 0 ? [...items, ...items, ...items, ...items] : [];
+  const displayItems = normalizedItems.length > 0
+    ? [...normalizedItems, ...normalizedItems, ...normalizedItems, ...normalizedItems]
+    : [];
 
   // Initial center position so scrolling left immediately works infinitely
   useEffect(() => {
-    if (railRef.current && items.length > 0) {
+    if (railRef.current && normalizedItems.length > 0) {
       const rail = railRef.current;
       const initialOffset = rail.scrollWidth / 4;
       rail.scrollLeft = initialOffset;
     }
-  }, [items.length]);
+  }, [normalizedItems.length]);
 
   // Infinite Auto-Slide every 2.4 seconds when not dragging/hovering
   useEffect(() => {
-    if (items.length === 0 || isPaused || isDragging) return;
+    if (normalizedItems.length === 0 || isPaused || isDragging) return;
 
     const interval = setInterval(() => {
       if (!railRef.current || isMouseDownRef.current) return;
@@ -41,7 +56,7 @@ export default function TrendingRail({ items = [] }) {
     }, 2400);
 
     return () => clearInterval(interval);
-  }, [items.length, isPaused, isDragging]);
+  }, [normalizedItems.length, isPaused, isDragging]);
 
   // Infinite Scroll boundary check on manual scroll / wheel
   const handleScroll = () => {
@@ -162,12 +177,15 @@ export default function TrendingRail({ items = [] }) {
             onScroll={handleScroll}
           >
             {displayItems.map((item, index) => {
-              const rankNum = item.rank || (index % items.length) + 1;
+              const rankNum = (index % (normalizedItems.length || 10)) + 1;
 
               return (
                 <article className="netflix-card fast-hover-card" key={`${item.title}-${index}`}>
                   <div className="netflix-card-inner">
-                    <div className="netflix-rank-simple" aria-hidden="true">
+                    <div
+                      className={`netflix-rank-simple ${rankNum === 10 ? 'rank-10' : ''}`}
+                      aria-hidden="true"
+                    >
                       {rankNum}
                     </div>
 
