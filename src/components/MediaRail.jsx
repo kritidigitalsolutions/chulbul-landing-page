@@ -12,23 +12,26 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   const hasMovedRef = useRef(false);
 
   const items = section.items || [];
-  // 4 sets for true seamless infinite loop buffer
-  const displayItems = items.length > 0 ? [...items, ...items, ...items, ...items] : [];
+  // Enable infinite buffer only when there are 5 or more items
+  const isLooping = items.length >= 5;
+  const displayItems = isLooping
+    ? [...items, ...items, ...items, ...items]
+    : items;
 
-  // Initial center position so scrolling left immediately works infinitely
+  // Initial center position so scrolling left immediately works infinitely (only when looping)
   useEffect(() => {
-    if (railRef.current && items.length > 0) {
+    if (railRef.current && isLooping) {
       const rail = railRef.current;
       const initialOffset = rail.scrollWidth / 4;
       rail.scrollLeft = initialOffset;
     }
-  }, [items.length]);
+  }, [items.length, isLooping]);
 
-  // Infinite Auto-Slide every 2.6s when not hovered or dragged
+  // Infinite Auto-Slide every 2.6s when looping and not hovered or dragged
   const intervalTime = 2600 + (sliderIndex % 3) * 400;
 
   useEffect(() => {
-    if (items.length === 0 || isPaused || isDragging) return;
+    if (!isLooping || isPaused || isDragging) return;
 
     const interval = setInterval(() => {
       if (!railRef.current || isMouseDownRef.current) return;
@@ -45,11 +48,11 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [items.length, isPaused, isDragging, intervalTime]);
+  }, [items.length, isLooping, isPaused, isDragging, intervalTime]);
 
   // Infinite Scroll boundary check on manual scroll / wheel
   const handleScroll = () => {
-    if (!railRef.current) return;
+    if (!railRef.current || !isLooping) return;
     const rail = railRef.current;
     const singleSetWidth = rail.scrollWidth / 4;
     if (singleSetWidth <= 0) return;
@@ -102,12 +105,14 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
     if (!railRef.current) return;
     const rail = railRef.current;
     const step = direction * 420;
-    const singleSetWidth = rail.scrollWidth / 4;
+    const singleSetWidth = isLooping ? rail.scrollWidth / 4 : rail.scrollWidth;
 
-    if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.5) {
-      rail.scrollLeft += singleSetWidth;
-    } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * 2.6) {
-      rail.scrollLeft -= singleSetWidth;
+    if (isLooping) {
+      if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.5) {
+        rail.scrollLeft += singleSetWidth;
+      } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * 2.6) {
+        rail.scrollLeft -= singleSetWidth;
+      }
     }
 
     rail.scrollBy({ left: step, behavior: 'smooth' });

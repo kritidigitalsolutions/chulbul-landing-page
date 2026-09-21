@@ -747,7 +747,11 @@ img {
 
 .media-card {
   flex: 0 0 174px;
+  width: 174px;
   cursor: grab;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
 }
 
 .netflix-card {
@@ -1808,6 +1812,10 @@ img {
     width: 130px;
     height: 190px;
   }
+  .netflix-card .media-info {
+    width: 130px;
+    margin-left: auto;
+  }
   .netflix-rank-simple {
     font-size: clamp(3.4rem, 5.8vw, 4.2rem);
     height: 190px;
@@ -1825,12 +1833,23 @@ img {
     margin-right: -8px;
     min-width: 48px;
   }
-  .netflix-poster-box .poster-wrap,
+  .media-card {
+    flex: 0 0 130px;
+    width: 130px;
+  }
   .media-card .poster-wrap {
+    width: 130px;
     height: 190px;
   }
-  .media-card {
-    flex-basis: 130px;
+  .media-card .media-info {
+    width: 130px;
+  }
+  .media-info h3 {
+    font-size: 0.86rem;
+  }
+  .media-meta {
+    font-size: 0.68rem;
+    gap: 6px;
   }
   .rail-arrow {
     display: none;
