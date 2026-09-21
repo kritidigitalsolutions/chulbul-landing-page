@@ -169,7 +169,7 @@ export default function TrendingRail({ items = [] }) {
             onScroll={handleScroll}
           >
             {displayItems.map((item, index) => {
-              const rankNum = isLooping ? (index % items.length) + 1 : (item.rank || index + 1);
+              const rankNum = item.rank || (index % items.length) + 1;
 
               return (
                 <article className="netflix-card fast-hover-card" key={`${item.id || item.title}-${index}`}>
