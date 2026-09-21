@@ -82,11 +82,11 @@ function Home() {
       }
     }
 
-    // 1. Blazing fast instant initial fetch
+    // 1. Instant initial fetch
     loadData();
 
-    // 2. Real-time background polling every 4 seconds for instant updates
-    const syncInterval = setInterval(loadData, 4000);
+    // 2. Real-time background sync polling (10s)
+    const syncInterval = setInterval(loadData, 10000);
 
     // 3. Instant auto-refresh when tab/window gains focus
     const handleVisibilityOrFocus = () => {
