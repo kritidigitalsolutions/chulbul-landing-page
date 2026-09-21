@@ -1,6 +1,6 @@
 /**
  * Chulbul Play Backend API Service Layer
- * Connects directly to Node.js / Express API based on Banners_and_Posters.postman_collection
+ * Ultra-fast concurrent fetch & live background sync
  */
 
 const getApiBaseUrl = () => {
@@ -24,7 +24,7 @@ export const API_CONFIG = {
 };
 
 /**
- * Safe fetch helper with timeout and JSON parsing
+ * Fast safe fetch helper with timeout and JSON parsing
  */
 async function fetchEndpoint(endpointPath) {
   try {
@@ -33,7 +33,7 @@ async function fetchEndpoint(endpointPath) {
       : `${API_CONFIG.BASE_URL}${endpointPath}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     const response = await fetch(fullUrl, {
       signal: controller.signal,
@@ -45,21 +45,18 @@ async function fetchEndpoint(endpointPath) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn(`[API] Endpoint ${fullUrl} responded with status: ${response.status}`);
       return null;
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.warn(`[API] Fetch error on ${endpointPath}:`, error.message);
     return null;
   }
 }
 
 /**
- * Extract an array from standard backend response shapes
- * (e.g. [ ... ], { banners: [ ... ] }, { posters: [ ... ] }, { data: [ ... ] }, { data: { posters: [ ... ] } })
+ * Extract an array from standard backend response formats
  */
 function extractArray(data, preferredKey = '') {
   if (!data) return [];
@@ -78,7 +75,7 @@ function extractArray(data, preferredKey = '') {
 }
 
 /**
- * Normalize a single banner item
+ * Normalize single banner
  */
 function normalizeBanner(item, index) {
   return {
@@ -98,7 +95,7 @@ function normalizeBanner(item, index) {
 }
 
 /**
- * Normalize a single poster item
+ * Normalize single poster
  */
 function normalizePoster(item, index) {
   return {
@@ -129,109 +126,50 @@ const CATEGORY_ICONS = ['monitor-play', 'sparkles', 'laugh', 'masks', 'scan-eye'
 
 export const api = {
   /**
-   * Fetch Hero Banners from /api/banners (sorted by priority, max 10)
+   * Concurrently fetch all landing page data in parallel
+   * Returns unified data object in a single blazing fast pass
    */
-  async getHeroBanners() {
-    const raw = await fetchEndpoint(API_CONFIG.ENDPOINTS.BANNERS);
-    const list = extractArray(raw, 'banners');
-    if (list.length === 0) return null;
+  async fetchAllLandingData() {
+    const [bannersRes, postersRes, categoriesRes] = await Promise.allSettled([
+      fetchEndpoint(API_CONFIG.ENDPOINTS.BANNERS),
+      fetchEndpoint(API_CONFIG.ENDPOINTS.POSTERS),
+      fetchEndpoint(API_CONFIG.ENDPOINTS.CATEGORIES)
+    ]);
 
-    return list
+    const rawBanners = bannersRes.status === 'fulfilled' ? bannersRes.value : null;
+    const rawPosters = postersRes.status === 'fulfilled' ? postersRes.value : null;
+    const rawCategories = categoriesRes.status === 'fulfilled' ? categoriesRes.value : null;
+
+    // 1. Process Banners
+    const bannerList = extractArray(rawBanners, 'banners');
+    const banners = bannerList
       .map(normalizeBanner)
       .filter((b) => b.isActive && b.image)
       .sort((a, b) => a.priority - b.priority)
       .slice(0, 10);
-  },
 
-  /**
-   * Fetch All Public Posters from /api/posters
-   */
-  async getAllPosters() {
-    const raw = await fetchEndpoint(API_CONFIG.ENDPOINTS.POSTERS);
-    const list = extractArray(raw, 'posters');
-    if (list.length === 0) return [];
-
-    return list
-      .map(normalizePoster)
-      .filter((p) => p.isActive && p.image)
-      .sort((a, b) => a.priority - b.priority);
-  },
-
-  /**
-   * Fetch Top 10 Trending Titles (/api/posters?category=Trending)
-   */
-  async getTrending() {
-    const raw = await fetchEndpoint(`${API_CONFIG.ENDPOINTS.POSTERS}?category=Trending`);
-    let list = extractArray(raw, 'posters');
-
-    let normalized = list
+    // 2. Process Posters
+    const posterList = extractArray(rawPosters, 'posters');
+    const allPosters = posterList
       .map(normalizePoster)
       .filter((p) => p.isActive && p.image)
       .sort((a, b) => a.priority - b.priority);
 
-    // If no specific 'Trending' category posters exist, fallback to all posters sorted by priority
-    if (normalized.length === 0) {
-      const all = await this.getAllPosters();
-      normalized = all.filter((p) => p.category?.toLowerCase() === 'trending');
-      if (normalized.length === 0 && all.length > 0) {
-        normalized = all.slice(0, 10);
-      }
+    // 3. Process Trending (Top 10)
+    let trendingList = allPosters.filter((p) => p.category?.toLowerCase() === 'trending');
+    if (trendingList.length === 0 && allPosters.length > 0) {
+      trendingList = allPosters.slice(0, 10);
     }
-
-    return normalized.slice(0, 10).map((item, idx) => ({
+    const trending = trendingList.slice(0, 10).map((item, idx) => ({
       ...item,
       rank: idx + 1
     }));
-  },
 
-  /**
-   * Fetch Distinct Categories from /api/posters/categories or derive dynamically
-   */
-  async getCategories() {
-    const raw = await fetchEndpoint(API_CONFIG.ENDPOINTS.CATEGORIES);
-    let cats = extractArray(raw, 'categories');
-
-    // If backend returns array of string category names or category objects
-    let categoryNames = [];
-    if (cats.length > 0) {
-      categoryNames = cats.map((c) => (typeof c === 'string' ? c : c.name || c.title || String(c)));
-    } else {
-      // Derive distinct categories from all posters
-      const allPosters = await this.getAllPosters();
-      categoryNames = Array.from(
-        new Set(allPosters.map((p) => p.category).filter(Boolean))
-      );
-    }
-
-    // Exclude 'Trending' from category grid if it's already in Top 10, or keep it
-    const filteredCats = categoryNames.filter((c) => c.toLowerCase() !== 'trending');
-
-    return filteredCats.map((name, index) => {
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      return {
-        name,
-        slug,
-        count: 'Explore Collection',
-        color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-        icon: CATEGORY_ICONS[index % CATEGORY_ICONS.length]
-      };
-    });
-  },
-
-  /**
-   * Fetch Dynamically Generated Category Rails ("jese category add hongi slider apne ap bante jayege")
-   * Groups all posters from /api/posters by category and builds dynamic sliders
-   */
-  async getCategoryRails() {
-    const allPosters = await this.getAllPosters();
-    if (allPosters.length === 0) return null;
-
-    // Group posters by category
+    // 4. Process Category Rails ("jaise category add hogi, slider apne aap banta jayega")
     const grouped = {};
     allPosters.forEach((poster) => {
       const cat = poster.category?.trim() || 'Movies';
-      // Skip 'Trending' category since it has its own dedicated top slider
-      if (cat.toLowerCase() === 'trending') return;
+      if (cat.toLowerCase() === 'trending') return; // Dedicated trending rail
 
       if (!grouped[cat]) {
         grouped[cat] = [];
@@ -239,25 +177,74 @@ export const api = {
       grouped[cat].push(poster);
     });
 
-    const categories = Object.keys(grouped);
-    if (categories.length === 0) return null;
-
-    // Build dynamic rails
-    const rails = categories.map((categoryName, index) => {
+    const categoryKeys = Object.keys(grouped);
+    const rails = categoryKeys.map((categoryName, index) => {
       const slug = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const accent = ACCENT_COLORS[index % ACCENT_COLORS.length];
 
       return {
         id: `category-${slug}`,
-        slug: slug,
+        slug,
         label: `${categoryName.toUpperCase()} SPOTLIGHT`,
         title: categoryName,
-        accent: accent,
+        accent,
         items: grouped[categoryName].sort((a, b) => a.priority - b.priority)
       };
     });
 
-    return rails;
+    // 5. Process Browse Categories Grid
+    const rawCatList = extractArray(rawCategories, 'categories');
+    let distinctCatNames = [];
+    if (rawCatList.length > 0) {
+      distinctCatNames = rawCatList.map((c) => (typeof c === 'string' ? c : c.name || c.title || String(c)));
+    } else {
+      distinctCatNames = categoryKeys;
+    }
+    const filteredCatNames = distinctCatNames.filter((c) => c.toLowerCase() !== 'trending');
+
+    const categories = filteredCatNames.map((name, index) => {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return {
+        name,
+        slug,
+        count: `${grouped[name]?.length || 'Explore'} titles`,
+        color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+        icon: CATEGORY_ICONS[index % CATEGORY_ICONS.length]
+      };
+    });
+
+    return {
+      banners: banners.length > 0 ? banners : null,
+      trending: trending.length > 0 ? trending : null,
+      categories: categories.length > 0 ? categories : null,
+      rails: rails.length > 0 ? rails : null
+    };
+  },
+
+  async getHeroBanners() {
+    const data = await this.fetchAllLandingData();
+    return data.banners;
+  },
+
+  async getAllPosters() {
+    const raw = await fetchEndpoint(API_CONFIG.ENDPOINTS.POSTERS);
+    const list = extractArray(raw, 'posters');
+    return list.map(normalizePoster).filter((p) => p.isActive && p.image);
+  },
+
+  async getTrending() {
+    const data = await this.fetchAllLandingData();
+    return data.trending;
+  },
+
+  async getCategories() {
+    const data = await this.fetchAllLandingData();
+    return data.categories;
+  },
+
+  async getCategoryRails() {
+    const data = await this.fetchAllLandingData();
+    return data.rails;
   }
 };
 

@@ -58,29 +58,49 @@ function Home() {
   const [categories, setCategories] = useState(defaultCategories);
   const [rails, setRails] = useState(defaultRails);
 
-  // Fetch dynamic data from Node.js backend API (falls back gracefully to default datasets)
+  // Instant concurrent API fetch + Live real-time background sync without page refresh
   useEffect(() => {
     let isMounted = true;
 
     async function loadData() {
-      const [fetchedBanners, fetchedTrending, fetchedCats, fetchedRails] = await Promise.all([
-        api.getHeroBanners(),
-        api.getTrending(),
-        api.getCategories(),
-        api.getCategoryRails()
-      ]);
+      const data = await api.fetchAllLandingData();
+      if (!isMounted || !data) return;
 
-      if (isMounted) {
-        if (fetchedBanners && fetchedBanners.length > 0) setBanners(fetchedBanners);
-        if (fetchedTrending && fetchedTrending.length > 0) setTrending(fetchedTrending);
-        if (fetchedCats && fetchedCats.length > 0) setCategories(fetchedCats);
-        if (fetchedRails && fetchedRails.length > 0) setRails(fetchedRails);
+      if (data.banners && data.banners.length > 0) {
+        setBanners(data.banners);
+      }
+      if (data.trending && data.trending.length > 0) {
+        setTrending(data.trending);
+      }
+      if (data.categories && data.categories.length > 0) {
+        setCategories(data.categories);
+      }
+      if (data.rails && data.rails.length > 0) {
+        setRails(data.rails);
       }
     }
 
+    // 1. Blazing fast instant initial fetch
     loadData();
+
+    // 2. Real-time background polling every 4 seconds for instant updates
+    const syncInterval = setInterval(loadData, 4000);
+
+    // 3. Instant auto-refresh when tab/window gains focus
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
     return () => {
       isMounted = false;
+      clearInterval(syncInterval);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, []);
 
