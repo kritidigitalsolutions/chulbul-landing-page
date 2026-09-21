@@ -29,6 +29,7 @@ import TermsAndConditions from './components/TermsAndConditions';
 import RefundPolicy from './components/RefundPolicy';
 import DeleteAccount from './components/DeleteAccount';
 import AboutUs from './components/AboutUs';
+import ContactUs from './components/ContactUs';
 import { api } from './services/api';
 import {
   heroBanners as defaultBanners,
@@ -457,7 +458,8 @@ export default function App() {
         <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/delete-account" element={<DeleteAccount />} />
         <Route path="/account-deletion" element={<DeleteAccount />} />
-        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/contact-us" element={<ContactUs />} />
         <Route path="*" element={<Home />} />
       </Routes>
       <Footer />
