@@ -11,36 +11,24 @@ export default function TrendingRail({ items = [] }) {
   const scrollLeftRef = useRef(0);
   const hasMovedRef = useRef(false);
 
-  // Ensure we have 10 items for Top 10
-  let normalizedItems = items;
-  if (items.length > 0 && items.length < 10) {
-    normalizedItems = [];
-    for (let i = 0; i < 10; i++) {
-      normalizedItems.push({
-        ...items[i % items.length],
-        id: `${items[i % items.length].id || 'top'}-rank-${i + 1}`,
-        rank: i + 1
-      });
-    }
-  }
+  // Enable infinite buffer only when there are 5 or more items
+  const isLooping = items.length >= 5;
+  const displayItems = isLooping
+    ? [...items, ...items, ...items, ...items]
+    : items;
 
-  // 4 sets for true seamless infinite loop buffer
-  const displayItems = normalizedItems.length > 0
-    ? [...normalizedItems, ...normalizedItems, ...normalizedItems, ...normalizedItems]
-    : [];
-
-  // Initial center position so scrolling left immediately works infinitely
+  // Initial center position so scrolling left immediately works infinitely (only when looping)
   useEffect(() => {
-    if (railRef.current && normalizedItems.length > 0) {
+    if (railRef.current && isLooping) {
       const rail = railRef.current;
       const initialOffset = rail.scrollWidth / 4;
       rail.scrollLeft = initialOffset;
     }
-  }, [normalizedItems.length]);
+  }, [items.length, isLooping]);
 
-  // Infinite Auto-Slide every 2.4 seconds when not dragging/hovering
+  // Infinite Auto-Slide every 2.6 seconds when looping and not dragging/hovering
   useEffect(() => {
-    if (normalizedItems.length === 0 || isPaused || isDragging) return;
+    if (!isLooping || isPaused || isDragging) return;
 
     const interval = setInterval(() => {
       if (!railRef.current || isMouseDownRef.current) return;
@@ -53,14 +41,14 @@ export default function TrendingRail({ items = [] }) {
       }
 
       rail.scrollBy({ left: step, behavior: 'smooth' });
-    }, 2400);
+    }, 2600);
 
     return () => clearInterval(interval);
-  }, [normalizedItems.length, isPaused, isDragging]);
+  }, [items.length, isLooping, isPaused, isDragging]);
 
   // Infinite Scroll boundary check on manual scroll / wheel
   const handleScroll = () => {
-    if (!railRef.current) return;
+    if (!railRef.current || !isLooping) return;
     const rail = railRef.current;
     const singleSetWidth = rail.scrollWidth / 4;
     if (singleSetWidth <= 0) return;
@@ -113,12 +101,14 @@ export default function TrendingRail({ items = [] }) {
     if (!railRef.current) return;
     const rail = railRef.current;
     const step = direction * 420;
-    const singleSetWidth = rail.scrollWidth / 4;
+    const singleSetWidth = isLooping ? rail.scrollWidth / 4 : rail.scrollWidth;
 
-    if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.5) {
-      rail.scrollLeft += singleSetWidth;
-    } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * 2.6) {
-      rail.scrollLeft -= singleSetWidth;
+    if (isLooping) {
+      if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.5) {
+        rail.scrollLeft += singleSetWidth;
+      } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * 2.6) {
+        rail.scrollLeft -= singleSetWidth;
+      }
     }
 
     rail.scrollBy({ left: step, behavior: 'smooth' });
@@ -177,13 +167,13 @@ export default function TrendingRail({ items = [] }) {
             onScroll={handleScroll}
           >
             {displayItems.map((item, index) => {
-              const rankNum = (index % (normalizedItems.length || 10)) + 1;
+              const rankNum = isLooping ? (index % items.length) + 1 : (item.rank || index + 1);
 
               return (
-                <article className="netflix-card fast-hover-card" key={`${item.title}-${index}`}>
+                <article className="netflix-card fast-hover-card" key={`${item.id || item.title}-${index}`}>
                   <div className="netflix-card-inner">
                     <div
-                      className={`netflix-rank-simple ${rankNum === 10 ? 'rank-10' : ''}`}
+                      className={`netflix-rank-simple rank-${rankNum}`}
                       aria-hidden="true"
                     >
                       {rankNum}

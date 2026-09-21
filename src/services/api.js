@@ -160,18 +160,10 @@ export const api = {
     if (trendingList.length === 0) {
       trendingList = allPosters;
     }
-    
-    const trending = [];
-    if (trendingList.length > 0) {
-      for (let i = 0; i < 10; i++) {
-        const base = trendingList[i % trendingList.length];
-        trending.push({
-          ...base,
-          id: `${base.id || 'trending'}-rank-${i + 1}`,
-          rank: i + 1
-        });
-      }
-    }
+    const trending = trendingList.slice(0, 10).map((item, idx) => ({
+      ...item,
+      rank: idx + 1
+    }));
 
     // 4. Process Category Rails ("jaise category add hogi, slider apne aap banta jayega")
     const grouped = {};
