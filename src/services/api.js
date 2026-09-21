@@ -4,7 +4,7 @@
  */
 
 const getApiBaseUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  let url = import.meta.env.VITE_API_URL || 'https://chulbulplay.vercel.app';
   url = url.trim().replace(/\/+$/, ''); // Remove trailing slash
   if (!url.endsWith('/api')) {
     url = `${url}/api`;
