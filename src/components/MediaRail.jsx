@@ -12,55 +12,58 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
   const hasMovedRef = useRef(false);
 
   const items = section.items || [];
-  // Enable infinite buffer only when there are 5 or more items
-  const isLooping = items.length >= 5;
-  const displayItems = isLooping
-    ? [...items, ...items, ...items, ...items]
-    : items;
+  // Create seamless duplicate sets so there are plenty of cards to scroll in both directions
+  const repeatCount = items.length > 0 ? Math.max(4, Math.ceil(12 / items.length)) : 0;
+  const displayItems = [];
+  if (items.length > 0) {
+    for (let r = 0; r < repeatCount; r++) {
+      displayItems.push(...items);
+    }
+  }
 
-  // Initial center position so scrolling left immediately works infinitely (only when looping)
+  // Initial center position so scrolling left immediately works infinitely
   useEffect(() => {
-    if (railRef.current && isLooping) {
+    if (railRef.current && displayItems.length > 0) {
       const rail = railRef.current;
-      const initialOffset = rail.scrollWidth / 4;
+      const singleSetWidth = rail.scrollWidth / repeatCount;
+      const initialOffset = singleSetWidth * Math.floor(repeatCount / 2);
       rail.scrollLeft = initialOffset;
     }
-  }, [items.length, isLooping]);
+  }, [items.length, repeatCount]);
 
-  // Infinite Auto-Slide every 2.6s when looping and not hovered or dragged
+  // Infinite Auto-Slide every 2.6s - 3.4s when not hovered or dragged
   const intervalTime = 2600 + (sliderIndex % 3) * 400;
 
   useEffect(() => {
-    if (!isLooping || isPaused || isDragging) return;
+    if (displayItems.length === 0 || isPaused || isDragging) return;
 
     const interval = setInterval(() => {
       if (!railRef.current || isMouseDownRef.current) return;
       const rail = railRef.current;
-      const singleSetWidth = rail.scrollWidth / 4;
+      const singleSetWidth = rail.scrollWidth / repeatCount;
       const step = 220; // 1 card width + gap
 
-      // If approaching the end of duplicate buffer, jump back seamlessly
-      if (rail.scrollLeft >= singleSetWidth * 2.8) {
-        rail.scrollLeft -= singleSetWidth;
+      if (rail.scrollLeft >= singleSetWidth * (repeatCount - 1.5)) {
+        rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
       }
 
       rail.scrollBy({ left: step, behavior: 'smooth' });
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [items.length, isLooping, isPaused, isDragging, intervalTime]);
+  }, [items.length, repeatCount, isPaused, isDragging, intervalTime]);
 
   // Infinite Scroll boundary check on manual scroll / wheel
   const handleScroll = () => {
-    if (!railRef.current || !isLooping) return;
+    if (!railRef.current || repeatCount === 0) return;
     const rail = railRef.current;
-    const singleSetWidth = rail.scrollWidth / 4;
+    const singleSetWidth = rail.scrollWidth / repeatCount;
     if (singleSetWidth <= 0) return;
 
-    if (rail.scrollLeft >= singleSetWidth * 3) {
-      rail.scrollLeft -= singleSetWidth;
-    } else if (rail.scrollLeft <= 15) {
-      rail.scrollLeft += singleSetWidth;
+    if (rail.scrollLeft >= singleSetWidth * (repeatCount - 1.2)) {
+      rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
+    } else if (rail.scrollLeft <= singleSetWidth * 0.4) {
+      rail.scrollLeft += singleSetWidth * Math.floor(repeatCount / 2);
     }
   };
 
@@ -102,17 +105,15 @@ export default function MediaRail({ section, sliderIndex = 0 }) {
 
   // Slider navigation buttons in top right
   const move = (direction) => {
-    if (!railRef.current) return;
+    if (!railRef.current || repeatCount === 0) return;
     const rail = railRef.current;
-    const step = direction * 420;
-    const singleSetWidth = isLooping ? rail.scrollWidth / 4 : rail.scrollWidth;
+    const step = direction * (rail.clientWidth > 600 ? 420 : 260);
+    const singleSetWidth = rail.scrollWidth / repeatCount;
 
-    if (isLooping) {
-      if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.5) {
-        rail.scrollLeft += singleSetWidth;
-      } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * 2.6) {
-        rail.scrollLeft -= singleSetWidth;
-      }
+    if (direction < 0 && rail.scrollLeft <= singleSetWidth * 0.8) {
+      rail.scrollLeft += singleSetWidth * Math.floor(repeatCount / 2);
+    } else if (direction > 0 && rail.scrollLeft >= singleSetWidth * (repeatCount - 1.5)) {
+      rail.scrollLeft -= singleSetWidth * Math.floor(repeatCount / 2);
     }
 
     rail.scrollBy({ left: step, behavior: 'smooth' });
