@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import {
   Film,
   Tv,
@@ -7,15 +8,18 @@ import {
   Play,
   Globe,
   Sliders,
-  ShieldCheck,
-  Zap,
   CheckCircle2,
   Clapperboard,
-  HeartHandshake
+  HeartHandshake,
+  ArrowLeft
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function AboutUs() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const pillars = [
     {
       icon: Film,
@@ -76,22 +80,31 @@ export default function AboutUs() {
   ];
 
   return (
-    <main className="legal-page about-us-page">
-      <div className="legal-hero">
-        <div className="container">
-          <div className="legal-hero-badge">
-            <Sparkles size={16} /> About Chulbul Play
+    <main className="simple-page about-us-page">
+      <div className="container about-container">
+        {/* Breadcrumb Navigation */}
+        <div className="privacy-breadcrumb">
+          <Link to="/" className="back-link">
+            <ArrowLeft size={16} /> Back to Home
+          </Link>
+          <span className="breadcrumb-divider">/</span>
+          <span className="current-crumb">About Us</span>
+        </div>
+
+        {/* Page Hero Header */}
+        <header className="about-header">
+          <div className="about-badge">
+            <Sparkles size={16} />
+            <span>About Chulbul Play</span>
           </div>
           <h1>Your Premier Destination for Unlimited Entertainment</h1>
-          <p className="legal-hero-lead">
+          <p className="about-lead">
             Chulbul Play App is fully loaded with entertaining content. Get popular movies, amazing web series and more, all in the language you prefer.
           </p>
-        </div>
-      </div>
+        </header>
 
-      <div className="container legal-body-wrap">
-        {/* Welcome Section */}
-        <section className="legal-card about-intro-card">
+        {/* Welcome Section Card */}
+        <section className="about-intro-card">
           <span className="about-label">WELCOME TO CHULBUL PLAY</span>
           <h2>A World of Stories, Crafted for You</h2>
           <p className="about-welcome-text">
@@ -148,7 +161,7 @@ export default function AboutUs() {
         </div>
 
         {/* Download App CTA Banner */}
-        <section className="legal-card about-cta-banner">
+        <section className="about-cta-banner">
           <div className="about-cta-content">
             <span className="live-pill">
               <span /> Ready to Stream?

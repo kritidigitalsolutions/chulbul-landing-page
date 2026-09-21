@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MapPin,
   Mail,
@@ -6,12 +6,15 @@ import {
   Send,
   CheckCircle2,
   Sparkles,
-  PhoneCall,
-  MessageSquare,
-  HelpCircle
+  ArrowLeft
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function ContactUs() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,20 +36,29 @@ export default function ContactUs() {
   };
 
   return (
-    <main className="legal-page contact-us-page">
-      <div className="legal-hero">
-        <div className="container">
-          <div className="legal-hero-badge">
-            <Sparkles size={16} /> Get In Touch
+    <main className="simple-page contact-us-page">
+      <div className="container contact-container">
+        {/* Breadcrumb Navigation */}
+        <div className="privacy-breadcrumb">
+          <Link to="/" className="back-link">
+            <ArrowLeft size={16} /> Back to Home
+          </Link>
+          <span className="breadcrumb-divider">/</span>
+          <span className="current-crumb">Contact Us</span>
+        </div>
+
+        {/* Page Hero Header */}
+        <header className="about-header">
+          <div className="about-badge">
+            <Sparkles size={16} />
+            <span>Get In Touch</span>
           </div>
           <h1>We’re Here to Help You Stream Seamlessly</h1>
-          <p className="legal-hero-lead">
+          <p className="about-lead">
             Have questions about your subscription, technical support, content suggestions, or partnership queries? Reach out to us.
           </p>
-        </div>
-      </div>
+        </header>
 
-      <div className="container legal-body-wrap">
         <div className="contact-main-grid">
           {/* Left Column: Contact Information Cards */}
           <div className="contact-info-column">
