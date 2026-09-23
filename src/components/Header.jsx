@@ -51,7 +51,7 @@ export default function Header() {
             onClick={(e) => handleNavClick(e, '/#hero')}
           >
             <img src="/assets/logo/chulbul-play.png" alt="Chulbul Play" />
-            <span>
+            <span className="sr-only">
               Chulbul <b>Play</b>
             </span>
           </Link>

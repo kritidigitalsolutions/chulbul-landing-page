@@ -30,7 +30,7 @@ import RefundPolicy from './components/RefundPolicy';
 import DeleteAccount from './components/DeleteAccount';
 import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
-import { api } from './services/api';
+import { api, prefetchPromise } from './services/api';
 import {
   heroBanners as defaultBanners,
   trendingItems as defaultTrending,
@@ -60,35 +60,31 @@ function Home() {
   const [categories, setCategories] = useState(defaultCategories);
   const [rails, setRails] = useState(defaultRails);
 
-  // Instant concurrent API fetch + Live real-time background sync without page refresh
+  // Apply fetched data to state
+  const applyData = (data) => {
+    if (!data) return;
+    if (data.banners && data.banners.length > 0) setBanners(data.banners);
+    if (data.trending && data.trending.length > 0) setTrending(data.trending);
+    if (data.categories && data.categories.length > 0) setCategories(data.categories);
+    if (data.rails && data.rails.length > 0) setRails(data.rails);
+  };
+
   useEffect(() => {
     let isMounted = true;
 
-    async function loadData() {
-      const data = await api.fetchAllLandingData();
-      if (!isMounted || !data) return;
+    // 1. Await the prefetch that started at MODULE LOAD TIME (before React rendered)
+    //    This is already resolved or nearly resolved — instant data!
+    prefetchPromise.then((data) => {
+      if (isMounted) applyData(data);
+    });
 
-      if (data.banners && data.banners.length > 0) {
-        setBanners(data.banners);
-      }
-      if (data.trending && data.trending.length > 0) {
-        setTrending(data.trending);
-      }
-      if (data.categories && data.categories.length > 0) {
-        setCategories(data.categories);
-      }
-      if (data.rails && data.rails.length > 0) {
-        setRails(data.rails);
-      }
-    }
-
-    // 1. Initial fetch on mount
-    loadData();
-
-    // 2. Refresh when tab/window gains focus
+    // 2. On tab refocus: invalidate cache → fresh concurrent fetch
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
-        loadData();
+        api.invalidateCache();
+        api.fetchAllLandingData().then((data) => {
+          if (isMounted) applyData(data);
+        });
       }
     };
 

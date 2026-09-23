@@ -1,7 +1,14 @@
 /**
  * Chulbul Play Backend API Service Layer
  * Ultra-fast concurrent fetch & live background sync
+ *
+ * Key optimisations:
+ *  • All public endpoints fire concurrently via Promise.allSettled
+ *  • The very first fetch starts at MODULE LOAD time (before React renders)
+ *  • In-memory cache with a configurable TTL avoids redundant network calls
  */
+
+/* ───────────────────────── Config ────────────────────────── */
 
 const getApiBaseUrl = () => {
   let url = import.meta.env.VITE_API_URL || 'https://chulbulplay.vercel.app';
@@ -17,14 +24,37 @@ export const API_CONFIG = {
     return getApiBaseUrl();
   },
   ENDPOINTS: {
-    BANNERS: '/banners',
-    POSTERS: '/posters',
-    CATEGORIES: '/posters/categories'
-  }
+    // Public endpoints from Postman collection
+    BANNERS: '/banners',            // GET /api/banners
+    POSTERS: '/posters',            // GET /api/posters
+    CATEGORIES: '/posters/categories' // GET /api/posters/categories
+  },
+  TIMEOUT_MS: 8000,
+  CACHE_TTL_MS: 60_000 // 60 seconds
 };
 
+/* ───────────────────────── In-memory cache ────────────────── */
+
+let _cache = null;
+let _cacheTimestamp = 0;
+
+function getCachedData() {
+  if (_cache && Date.now() - _cacheTimestamp < API_CONFIG.CACHE_TTL_MS) {
+    return _cache;
+  }
+  return null;
+}
+
+function setCacheData(data) {
+  _cache = data;
+  _cacheTimestamp = Date.now();
+}
+
+/* ───────────────────────── Fetch helper ───────────────────── */
+
 /**
- * Fast safe fetch helper with timeout and JSON parsing
+ * Fast safe fetch with timeout, abort support and JSON parsing.
+ * Returns parsed JSON or null on any failure.
  */
 async function fetchEndpoint(endpointPath) {
   try {
@@ -33,7 +63,7 @@ async function fetchEndpoint(endpointPath) {
       : `${API_CONFIG.BASE_URL}${endpointPath}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT_MS);
 
     const response = await fetch(fullUrl, {
       signal: controller.signal,
@@ -55,6 +85,8 @@ async function fetchEndpoint(endpointPath) {
   }
 }
 
+/* ───────────────────────── Data extractors ────────────────── */
+
 /**
  * Extract an array from standard backend response formats
  */
@@ -73,6 +105,8 @@ function extractArray(data, preferredKey = '') {
   }
   return [];
 }
+
+/* ───────────────────────── Normalisers ────────────────────── */
 
 /**
  * Normalize single banner
@@ -113,6 +147,8 @@ function normalizePoster(item, index) {
   };
 }
 
+/* ───────────────────────── Styling constants ─────────────── */
+
 const ACCENT_COLORS = ['pink', 'yellow', 'orange', 'purple'];
 const CATEGORY_COLORS = [
   'linear-gradient(135deg, #f018a8, #793bf7)',
@@ -124,12 +160,20 @@ const CATEGORY_COLORS = [
 ];
 const CATEGORY_ICONS = ['monitor-play', 'sparkles', 'laugh', 'masks', 'scan-eye', 'tv'];
 
+/* ───────────────────────── Core API ──────────────────────── */
+
 export const api = {
   /**
-   * Concurrently fetch all landing page data in parallel
-   * Returns unified data object in a single blazing fast pass
+   * Concurrently fetch ALL landing page data in a single pass.
+   * All 3 endpoints fire at exactly the same time via Promise.allSettled.
+   * Results are cached to avoid redundant requests on tab refocus.
    */
   async fetchAllLandingData() {
+    // Return cached data if still fresh
+    const cached = getCachedData();
+    if (cached) return cached;
+
+    // Fire all 3 endpoints CONCURRENTLY — none waits for the other
     const [bannersRes, postersRes, categoriesRes] = await Promise.allSettled([
       fetchEndpoint(API_CONFIG.ENDPOINTS.BANNERS),
       fetchEndpoint(API_CONFIG.ENDPOINTS.POSTERS),
@@ -213,12 +257,17 @@ export const api = {
       };
     });
 
-    return {
+    const result = {
       banners: banners.length > 0 ? banners : null,
       trending: trending.length > 0 ? trending : null,
       categories: categories.length > 0 ? categories : null,
       rails: rails.length > 0 ? rails : null
     };
+
+    // Cache the result
+    setCacheData(result);
+
+    return result;
   },
 
   async getHeroBanners() {
@@ -245,7 +294,22 @@ export const api = {
   async getCategoryRails() {
     const data = await this.fetchAllLandingData();
     return data.rails;
+  },
+
+  /** Invalidate cache so next fetchAllLandingData() hits the network */
+  invalidateCache() {
+    _cache = null;
+    _cacheTimestamp = 0;
   }
 };
+
+/* ───────────────────────── PREFETCH ──────────────────────── */
+/**
+ * Start the very first fetch at MODULE LOAD time.
+ * This fires BEFORE React even mounts, so by the time the Home
+ * component calls fetchAllLandingData(), the promise is already
+ * resolved (or almost resolved). Zero wasted time.
+ */
+export const prefetchPromise = api.fetchAllLandingData();
 
 export default api;

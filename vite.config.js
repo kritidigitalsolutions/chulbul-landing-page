@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     watch: {
-      ignored: ['**/*.postman_collection*.json', '**/node_modules/**', '**/dist/**']
+      ignored: ['**/*postman*', '**/*collection*', '**/*Postman*', '**/*Collection*', '**/node_modules/**', '**/dist/**', '**/.git/**']
     }
   }
 });
