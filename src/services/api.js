@@ -11,7 +11,8 @@
 /* ───────────────────────── Config ────────────────────────── */
 
 const getApiBaseUrl = () => {
-  let url = import.meta.env.VITE_API_URL || 'https://chulbulplay.vercel.app';
+  let url = import.meta.env.VITE_API_URL || 'https://chulbulplay.vercel.app'
+  "192.168.1.15000";
   url = url.trim().replace(/\/+$/, ''); // Remove trailing slash
   if (!url.endsWith('/api')) {
     url = `${url}/api`;
